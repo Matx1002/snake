@@ -7,7 +7,7 @@ all: $(OBJ) winsys
 $(OBJ):
 	mkdir -p $(OBJ)
 
-# Dynamik linking
+# Dynamic linking
 winsys: $(OBJ)/main.o $(OBJ)/screen.o $(OBJ)/winsys.o $(OBJ)/snake.o
 	g++ -g -Wall -pedantic -std=c++11 $^ -o $@ -lncurses
 
