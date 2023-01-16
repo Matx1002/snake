@@ -25,8 +25,8 @@ private:
 
     void newFood() {
         srand(time(NULL));
-        food.x = rand() % (geom.size.x - 2) - 1;
-        food.y = rand() % (geom.size.y - 2) + 1;
+        food.x = rand() % (geom.size.x - 3) + 1;
+        food.y = rand() % (geom.size.y - 3) + 1;
     }
 
     bool eatFood() {
