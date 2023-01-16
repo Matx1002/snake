@@ -7,8 +7,10 @@
 #include <ctime>
 #include <curses.h>
 #include <list>
-#include <unistd.h>
 
+#define BASIC_SPEED 1000
+#define SPEED_UP 50
+#define LVL_UP 5
 
 class CSnake : public CFramedWindow {
 private:
@@ -34,7 +36,7 @@ private:
             // growSnake();
             newFood();
             score++;
-            if (score % 5 == 0) {
+            if (score % LVL_UP == 0) {
                 level++;
             }
             return true;
@@ -137,7 +139,7 @@ public:
 
     bool handleEvent(int key) {
 
-        timeout(1000 - 50 * level);
+        timeout(BASIC_SPEED - SPEED_UP * level);
         switch (key) {
             case KEY_UP:
                 if (dir == KEY_DOWN)
