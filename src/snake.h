@@ -21,6 +21,7 @@ private:
     bool reset = false;
     bool help_menu = true;
     bool game_over = false;
+    int level = 1;
 
     void newFood() {
         srand(time(NULL));
@@ -28,12 +29,17 @@ private:
         food.y = rand() % (geom.size.y - 2) + 1;
     }
 
-    void eatFood() {
+    bool eatFood() {
         if (snake.front().x == food.x && snake.front().y == food.y) {
-            growSnake();
+            // growSnake();
             newFood();
             score++;
+            if (score % 5 == 0) {
+                level++;
+            }
+            return true;
         }
+        return false;
     }
 
     void growSnake() {
@@ -52,8 +58,10 @@ private:
     }
 
     void gameOverMenu() {
-        gotoyx(geom.topleft.y + geom.size.y / 2 - 2, geom.topleft.x + geom.size.x / 2 - 10);
+        gotoyx(geom.topleft.y + geom.size.y / 2 - 3, geom.topleft.x + geom.size.x / 2 - 10);
         printl("GAME OVER");
+        gotoyx(geom.topleft.y + geom.size.y / 2 - 2, geom.topleft.x + geom.size.x / 2 - 10);
+        printl("Your score is: %d", score);
         gotoyx(geom.topleft.y + geom.size.y / 2 - 1, geom.topleft.x + geom.size.x / 2 - 10);
         printl("Press 'r' to reset the game");
         gotoyx(geom.topleft.y + geom.size.y / 2, geom.topleft.x + geom.size.x / 2 - 10);
@@ -62,9 +70,9 @@ private:
 
 public:
     CSnake(CRect r, char _c = ' ') : CFramedWindow(r, _c) {
-        snake.push_back(CPoint(10, 10));
-        snake.push_back(CPoint(10, 11));
-        snake.push_back(CPoint(10, 12));
+        snake.push_back(CPoint(7, 10));
+        snake.push_back(CPoint(7, 11));
+        snake.push_back(CPoint(7, 12));
         newFood();
     }
 
@@ -78,34 +86,25 @@ public:
             // printl("PAUSE");
         }
 
-        if(game_over) {
-            pause=true;
-            gameOverMenu();
-        }
-
-        if (help_menu) {
-            gotoyx(geom.topleft.y + geom.size.y / 2 - 2, geom.topleft.x + geom.size.x / 2 - 10);
-            printl("Press 'h' to hide this menu");
-            gotoyx(geom.topleft.y + geom.size.y / 2 - 1, geom.topleft.x + geom.size.x / 2 - 10);
-            printl("Press 'p' to pause the game");
-            gotoyx(geom.topleft.y + geom.size.y / 2, geom.topleft.x + geom.size.x / 2 - 10);
-            printl("Press 'r' to reset the game");
-            gotoyx(geom.topleft.y + geom.size.y / 2 + 1, geom.topleft.x + geom.size.x / 2 - 10);
-            printl("Press 'q' to quit the game");
-        }
 
         if (reset) {
             snake.clear();
-            snake.push_back(CPoint(10, 10));
-            snake.push_back(CPoint(10, 11));
-            snake.push_back(CPoint(10, 12));
+            snake.push_back(CPoint(7, 10));
+            snake.push_back(CPoint(7, 11));
+            snake.push_back(CPoint(7, 12));
             dir = KEY_UP;
             score = 0;
             reset = false;
             game_over = false;
+            pause = true;
+            help_menu = true;
         }
 
-        eatFood();
+        // eatFood();
+
+
+        gotoyx(geom.topleft.y + food.y, geom.topleft.x + food.x);
+        printc('*');
 
         for (auto i = snake.begin(); i != snake.end(); i++) {
             gotoyx(i->y + geom.topleft.y, i->x + geom.topleft.x);
@@ -115,16 +114,30 @@ public:
                 printc('#');
         }
 
-        gotoyx(geom.topleft.y + food.y, geom.topleft.x + food.x);
-        printc('*');
+
+        if (help_menu) {
+            gotoyx(geom.topleft.y + geom.size.y / 2 - 2, geom.topleft.x + geom.size.x / 2 - 12);
+            printl("Press 'h' to show/hide this menu");
+            gotoyx(geom.topleft.y + geom.size.y / 2 - 1, geom.topleft.x + geom.size.x / 2 - 12);
+            printl("Press 'p' to toggle pause the game");
+            gotoyx(geom.topleft.y + geom.size.y / 2 + 1, geom.topleft.x + geom.size.x / 2 - 12);
+            printl("Press 'r' to reset the game");
+            gotoyx(geom.topleft.y + geom.size.y / 2 + 2, geom.topleft.x + geom.size.x / 2 - 12);
+            printl("Press 'q' to quit the game");
+        }
+
+        if (game_over) {
+            pause = true;
+            gameOverMenu();
+        }
 
         gotoyx(geom.topleft.y - 1, geom.topleft.x);
-        printl("|Score: %d|", score);
+        printl("|Level: %d|", level);
     }
 
     bool handleEvent(int key) {
 
-        timeout(1000);
+        timeout(1000 - 50 * level);
         switch (key) {
             case KEY_UP:
                 if (dir == KEY_DOWN)
@@ -150,31 +163,36 @@ public:
                 if (help_menu)
                     break;
                 pause = !pause;
-                break;
+                return true;
             case 'r':
                 reset = true;
-                break;
+                game_over = false;
+                help_menu = true;
+                return true;
             case 'h':
                 help_menu = !help_menu;
                 if (help_menu)
                     pause = true;
                 else
                     pause = false;
-                break;
+                return true;
         };
 
         if (pause == false) moveSake();
         if (pause)
             return CFramedWindow::handleEvent(key);
-        checkCollisionOfSnakeItself();
+        else
+            checkCollisionOfSnakeItself();
 
         return true;
     }
 
     void moveSake() {
         CPoint head = snake.front();
-        CPoint tail = snake.back();
-        snake.pop_back();
+        // CPoint tail = snake.back();
+        if (eatFood() == false)
+            snake.pop_back();
+
         switch (dir) {
             case KEY_UP:
                 head.y--;
