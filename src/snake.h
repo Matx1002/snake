@@ -3,10 +3,12 @@
 
 #include "screen.h"
 #include "winsys.h"
+#include <cstdlib>
 #include <ctime>
 #include <curses.h>
 #include <list>
 #include <unistd.h>
+
 
 class CSnake : public CFramedWindow {
 private:
@@ -16,24 +18,94 @@ private:
     int score = 0;
 
     bool pause = true;
+    bool reset = false;
+    bool help_menu = true;
+    bool game_over = false;
 
-    void newFood();
-    void moveSnake();
-    void growSnake();
+    void newFood() {
+        srand(time(NULL));
+        food.x = rand() % (geom.size.x - 2) - 1;
+        food.y = rand() % (geom.size.y - 2) + 1;
+    }
+
+    void eatFood() {
+        if (snake.front().x == food.x && snake.front().y == food.y) {
+            growSnake();
+            newFood();
+            score++;
+        }
+    }
+
+    void growSnake() {
+        CPoint tail = snake.back();
+        snake.push_back(tail);
+    }
+
+    void checkCollisionOfSnakeItself() {
+        auto it = snake.begin();
+        it++;
+        for (; it != snake.end(); it++) {
+            if (snake.front().x == it->x && snake.front().y == it->y) {
+                game_over = true;
+            }
+        }
+    }
+
+    void gameOverMenu() {
+        gotoyx(geom.topleft.y + geom.size.y / 2 - 2, geom.topleft.x + geom.size.x / 2 - 10);
+        printl("GAME OVER");
+        gotoyx(geom.topleft.y + geom.size.y / 2 - 1, geom.topleft.x + geom.size.x / 2 - 10);
+        printl("Press 'r' to reset the game");
+        gotoyx(geom.topleft.y + geom.size.y / 2, geom.topleft.x + geom.size.x / 2 - 10);
+        printl("Press 'q' to quit the game");
+    }
 
 public:
     CSnake(CRect r, char _c = ' ') : CFramedWindow(r, _c) {
         snake.push_back(CPoint(10, 10));
         snake.push_back(CPoint(10, 11));
         snake.push_back(CPoint(10, 12));
+        newFood();
     }
 
-    void pauseMenu() {
-    }
 
     void paint() {
+
         CFramedWindow::paint();
 
+        if (pause) {
+            // gotoyx(geom.topleft.y + geom.size.y / 2, geom.topleft.x + geom.size.x / 2);
+            // printl("PAUSE");
+        }
+
+        if(game_over) {
+            pause=true;
+            gameOverMenu();
+        }
+
+        if (help_menu) {
+            gotoyx(geom.topleft.y + geom.size.y / 2 - 2, geom.topleft.x + geom.size.x / 2 - 10);
+            printl("Press 'h' to hide this menu");
+            gotoyx(geom.topleft.y + geom.size.y / 2 - 1, geom.topleft.x + geom.size.x / 2 - 10);
+            printl("Press 'p' to pause the game");
+            gotoyx(geom.topleft.y + geom.size.y / 2, geom.topleft.x + geom.size.x / 2 - 10);
+            printl("Press 'r' to reset the game");
+            gotoyx(geom.topleft.y + geom.size.y / 2 + 1, geom.topleft.x + geom.size.x / 2 - 10);
+            printl("Press 'q' to quit the game");
+        }
+
+        if (reset) {
+            snake.clear();
+            snake.push_back(CPoint(10, 10));
+            snake.push_back(CPoint(10, 11));
+            snake.push_back(CPoint(10, 12));
+            dir = KEY_UP;
+            score = 0;
+            reset = false;
+            game_over = false;
+        }
+
+        eatFood();
 
         for (auto i = snake.begin(); i != snake.end(); i++) {
             gotoyx(i->y + geom.topleft.y, i->x + geom.topleft.x);
@@ -43,18 +115,15 @@ public:
                 printc('#');
         }
 
-        if (pause) {
-            gotoyx(geom.topleft.y + geom.size.y / 2, geom.topleft.x + geom.size.x / 2);
-            printl("PAUSE");
-            return;
-        }
+        gotoyx(geom.topleft.y + food.y, geom.topleft.x + food.x);
+        printc('*');
 
-        // // print score
-        // gotoyx(geom.topleft.y + geom.size.y + 1, geom.topleft.x);
-        // printl("Score: %d", score);
+        gotoyx(geom.topleft.y - 1, geom.topleft.x);
+        printl("|Score: %d|", score);
     }
 
     bool handleEvent(int key) {
+
         timeout(1000);
         switch (key) {
             case KEY_UP:
@@ -78,10 +147,27 @@ public:
                 dir = KEY_LEFT;
                 break;
             case 'p':
+                if (help_menu)
+                    break;
                 pause = !pause;
                 break;
+            case 'r':
+                reset = true;
+                break;
+            case 'h':
+                help_menu = !help_menu;
+                if (help_menu)
+                    pause = true;
+                else
+                    pause = false;
+                break;
         };
+
         if (pause == false) moveSake();
+        if (pause)
+            return CFramedWindow::handleEvent(key);
+        checkCollisionOfSnakeItself();
+
         return true;
     }
 
