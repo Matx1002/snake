@@ -49,7 +49,7 @@ private:
         snake.push_back(tail);
     }
 
-    void checkCollisionOfSnakeItself() {
+    void checkSnakeBodyCollision() {
         auto it = snake.begin();
         it++;
         for (; it != snake.end(); it++) {
@@ -184,7 +184,7 @@ public:
         if (pause)
             return CFramedWindow::handleEvent(key);
         else
-            checkCollisionOfSnakeItself();
+            checkSnakeBodyCollision();
 
         return true;
     }
